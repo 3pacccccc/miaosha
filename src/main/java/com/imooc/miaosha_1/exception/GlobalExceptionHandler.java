@@ -1,4 +1,4 @@
-package com.imooc.miaosha_1;
+package com.imooc.miaosha_1.exception;
 
 
 import com.imooc.miaosha_1.exception.GlobalException;
