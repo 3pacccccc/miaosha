@@ -99,6 +99,7 @@ public class GoodsController {
         if (!org.apache.commons.lang3.StringUtils.isEmpty(html)) {
             redisService.set(GoodsKey.getGoodsDetail, "" + goodsId, html);
         }
+        return html;
     }
 
 
