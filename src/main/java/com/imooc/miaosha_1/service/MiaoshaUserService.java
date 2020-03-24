@@ -2,7 +2,6 @@ package com.imooc.miaosha_1.service;
 
 import com.imooc.miaosha_1.dao.MiaoshaUserDao;
 import com.imooc.miaosha_1.domain.MiaoshaUser;
-import com.imooc.miaosha_1.domain.User;
 import com.imooc.miaosha_1.exception.GlobalException;
 import com.imooc.miaosha_1.redis.MiaoshaUserKey;
 import com.imooc.miaosha_1.redis.RedisService;
@@ -29,7 +28,40 @@ public class MiaoshaUserService {
     private RedisService redisService;
 
     public MiaoshaUser getById(Long id) {
-        return miaoshaUserDao.getById(id);
+//        return miaoshaUserDao.getById(id);
+        // 取缓存
+        MiaoshaUser user = redisService.get(MiaoshaUserKey.getById, "" + id, MiaoshaUser.class);
+        if (user != null) {
+            return user;
+        }
+
+        // 缓存没有取到,则从数据库中取，并且写入到redis
+        user = miaoshaUserDao.getById(id);
+        if (user != null) {
+            redisService.set(MiaoshaUserKey.getById, "" + id, user);
+        }
+        return user;
+    }
+
+    public boolean updatePassword(String token, long id, String formPass) {
+        // 取出user
+        MiaoshaUser user = getById(id);
+        if (user == null) {
+            throw new GlobalException(CodeMsg.MOBILE_NOT_EXIST);
+        }
+
+        // 更新数据库
+        MiaoshaUser toBeUpdate = new MiaoshaUser();
+        toBeUpdate.setId(id);
+        toBeUpdate.setPassword(MD5Util.formPassToDBPass(formPass, user.getSalt()));
+        miaoshaUserDao.update(toBeUpdate);
+        // 处理缓存，让缓存失效 (此处必须先更新数据库，再处理缓存，不然反过来的话，getById操作会在
+        // 缓存失效之后重新用数据库老的数据重新生成缓存，造成getById在更新之后还是一直走缓存获取到老的数据)
+
+        redisService.delete(MiaoshaUserKey.getById, "" + id);
+        user.setPassword(toBeUpdate.getPassword());
+        redisService.set(MiaoshaUserKey.token, token, user);
+        return true;
     }
 
     public MiaoshaUser getByToken(HttpServletResponse response, String token) {
@@ -42,7 +74,6 @@ public class MiaoshaUserService {
             addCookie(response, token, miaoshaUser);
         }
         return miaoshaUser;
-
     }
 
     public boolean login(HttpServletResponse response, LoginVo loginVo) {
