@@ -2,6 +2,7 @@ package com.imooc.miaosha_1.config;
 
 import com.imooc.miaosha_1.domain.MiaoshaUser;
 import com.imooc.miaosha_1.service.MiaoshaUserService;
+import com.imooc.miaosha_1.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Service;
@@ -34,25 +35,8 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
                                   WebDataBinderFactory webDataBinderFactory) throws Exception {
         HttpServletRequest request = nativeWebRequest.getNativeRequest(HttpServletRequest.class);
         HttpServletResponse response = nativeWebRequest.getNativeResponse(HttpServletResponse.class);
-        String paramToken = request.getParameter(MiaoshaUserService.COOKIE_NAME_TOKEN);
-        String cookieToken = getCookieValue(request);
-        if (StringUtils.isEmpty(paramToken) && StringUtils.isEmpty(cookieToken)) {
-            return null;
-        }
-        String token = StringUtils.isEmpty(paramToken) ? cookieToken : paramToken;
+        String token = UserUtil.getTokenByParamOrCookie(request);
         return miaoshaUserService.getByToken(response, token);
     }
 
-    private String getCookieValue(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null || cookies.length <= 0) {
-            return null;
-        }
-        for (Cookie cookie : cookies) {
-            if (cookie.getName().equals(MiaoshaUserService.COOKIE_NAME_TOKEN)) {
-                return cookie.getValue();
-            }
-        }
-        return null;
-    }
 }

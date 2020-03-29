@@ -4,6 +4,7 @@ import com.imooc.miaosha_1.domain.MiaoshaOrder;
 import com.imooc.miaosha_1.domain.OrderInfo;
 import org.apache.ibatis.annotations.*;
 
+@Mapper
 public interface OrderDao {
 
     @Select("select * from miaosha_order where user_id=#{userId} and goods_id=#{goodsId}")
